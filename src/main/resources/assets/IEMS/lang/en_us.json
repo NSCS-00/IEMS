@@ -1,0 +1,23 @@
+{
+  "block.iems.standard_energy_storage": "Standard Energy Storage",
+  "block.iems.general_energy_storage": "General Energy Storage",
+  "block.iems.energy_converter": "Energy Converter",
+  "block.iems.energy_relay": "Energy Relay Transmitter",
+  "block.iems.energy_broadcast_tower": "Energy Broadcast Tower",
+
+  "itemGroup.iems.main": "Integrated Energy Management System",
+
+  "gui.iems.emd": "Energy Monitor Display",
+  "gui.iems.emd.energy": "Current Energy",
+  "gui.iems.emd.consumption": "Consumption",
+  "gui.iems.emd.generation": "Generation",
+  "gui.iems.emd.time_to_full": "Time to Full",
+  "gui.iems.emd.depleted": "Grid Depleted",
+
+  "message.iems.connection_mode": "Connection Mode Enabled",
+  "message.iems.connection_cancelled": "Connection Cancelled",
+  "message.iems.connection_success": "Connection Established",
+  "message.iems.connection_too_far": "Too Far",
+  "message.iems.invalid_target": "Invalid Target",
+  "message.iems.unit_conversion": "Unit Conversion: %s"
+}
