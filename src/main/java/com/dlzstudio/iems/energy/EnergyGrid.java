@@ -2,6 +2,7 @@ package com.dlzstudio.iems.energy;
 
 import com.dlzstudio.iems.IEMSMod;
 import com.dlzstudio.iems.blocks.entity.EnergyStorageBlockEntity;
+import com.dlzstudio.iems.web.WebServer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -15,36 +16,58 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 电网系统 - 单例模式
  * 管理整个世界的能源网络
+ * 
+ * v0.6.0: 添加设备供能开关功能
  */
 public class EnergyGrid {
     private static final Lazy<EnergyGrid> INSTANCE = Lazy.of(EnergyGrid::new);
-    
+
     private final Set<EnergyStorageBlockEntity> storageDevices = ConcurrentHashMap.newKeySet();
     private final Set<BlockPos> relayPositions = ConcurrentHashMap.newKeySet();
     private final Set<BlockPos> broadcastTowerPositions = ConcurrentHashMap.newKeySet();
     private final Map<BlockPos, Set<BlockPos>> connections = new ConcurrentHashMap<>();
     private final Set<BlockPos> connectedToCore = ConcurrentHashMap.newKeySet();
-    
+    private final Set<BlockPos> disabledDevices = ConcurrentHashMap.newKeySet();
+
     private static final BigInteger DEFAULT_CORE_CAPACITY_SE = BigInteger.TEN.pow(20);
     private EnergyValue coreEnergy;
-    
+
     private EnergyValue currentConsumption = EnergyValue.zero();
     private EnergyValue currentGeneration = EnergyValue.zero();
     private EnergyValue lastConsumption = EnergyValue.zero();
     private EnergyValue lastGeneration = EnergyValue.zero();
-    
+
     private boolean isDepleted = false;
     private boolean isChargingStorages = false;
-    
+
     private MinecraftServer server;
     private int webServerPort = 8080;
-    
+
     private EnergyGrid() {
         this.coreEnergy = new EnergyValue(DEFAULT_CORE_CAPACITY_SE, EnergyValue.EnergyUnit.SE);
     }
-    
+
     public static EnergyGrid getInstance() {
         return INSTANCE.get();
+    }
+
+    /**
+     * 检查设备是否被禁用
+     */
+    public boolean isDeviceDisabled(BlockPos pos) {
+        String posString = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+        return disabledDevices.contains(pos) || !WebServer.isDeviceEnabled(posString);
+    }
+
+    /**
+     * 切换设备供能状态
+     */
+    public void toggleDevice(BlockPos pos) {
+        if (disabledDevices.contains(pos)) {
+            disabledDevices.remove(pos);
+        } else {
+            disabledDevices.add(pos);
+        }
     }
     
     public void onServerTick(MinecraftServer server) {

@@ -8,7 +8,7 @@ tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-version = '0.5.2'
+version = '0.6.0'
 group = 'com.dlzstudio.iems'
 
 base {
