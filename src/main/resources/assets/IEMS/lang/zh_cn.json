@@ -1,0 +1,23 @@
+{
+  "block.IEMS.standard_energy_storage": "标准能量存储器",
+  "block.IEMS.general_energy_storage": "通用能量存储器",
+  "block.IEMS.energy_converter": "能量转换器",
+  "block.IEMS.energy_relay": "能源中继传输器",
+  "block.IEMS.energy_broadcast_tower": "能源广播塔",
+
+  "itemGroup.IEMS.main": "综合能源管理系统",
+
+  "gui.IEMS.emd": "能源监控面板",
+  "gui.IEMS.emd.energy": "当前电量",
+  "gui.IEMS.emd.consumption": "耗电",
+  "gui.IEMS.emd.generation": "发电",
+  "gui.IEMS.emd.time_to_full": "充满时间",
+  "gui.IEMS.emd.depleted": "电网已耗尽",
+
+  "message.IEMS.connection_mode": "连接模式开启",
+  "message.IEMS.connection_cancelled": "已取消连接模式",
+  "message.IEMS.connection_success": "连接成功",
+  "message.IEMS.connection_too_far": "距离过远",
+  "message.IEMS.invalid_target": "未找到有效目标",
+  "message.IEMS.unit_conversion": "单位转换：%s"
+}
