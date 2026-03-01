@@ -4,7 +4,7 @@ license="MIT"
 
 [[mods]]
 modId="IEMS"
-version="0.5.1"
+version="0.5.2"
 displayName="Integrated Energy Management System"
 authors="等离子工作室 (DLZstudio)"
 description='''
