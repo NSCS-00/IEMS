@@ -1,255 +1,206 @@
 package com.dlzstudio.iems.blocks.entity;
 
 import com.dlzstudio.iems.IEMSMod;
+import com.dlzstudio.iems.energy.EnergyGrid;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.world.level.Level;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * 能量连接管理器
- * 管理所有能量连接
+ * 能源连接管理器
+ * 管理所有设备之间的连接关系
  */
 public class EnergyConnectionManager {
     
-    private static final EnergyConnectionManager INSTANCE = new EnergyConnectionManager();
+    private static EnergyConnectionManager instance;
     
-    // 所有活跃的连接
-    private final Map<UUID, EnergyConnection> connections = new ConcurrentHashMap<>();
+    // 进行中的连接 (连接 ID -> 连接信息)
+    private final Map<UUID, Connection> activeConnections = new ConcurrentHashMap<>();
     
-    // 允许连接的设备列表 (由其他 MOD 注册)
-    private final Set<ResourceLocation> allowedDeviceTypes = ConcurrentHashMap.newKeySet();
+    // 已完成的连接列表
+    private final List<Connection> completedConnections = new CopyOnWriteArrayList<>();
     
-    // 设备类型注册表 (Block -> 是否允许连接)
-    private final Map<ResourceLocation, Boolean> deviceRegistry = new ConcurrentHashMap<>();
+    // 允许连接的设备类型
+    private final Set<ResourceLocation> allowedDevices = ConcurrentHashMap.newKeySet();
+    
+    // 缓存：位置 -> 是否连接到核心
+    private final Map<BlockPos, Boolean> connectionCache = new ConcurrentHashMap<>();
     
     private EnergyConnectionManager() {
-        // 注册 IEMS 默认设备
-        registerDefaultDevices();
-    }
-    
-    /**
-     * 注册默认设备
-     */
-    private void registerDefaultDevices() {
-        // IEMS 模组的所有能源设备默认允许
-        registerAllowedDevice(IEMSMod.MODID, "standard_energy_storage");
-        registerAllowedDevice(IEMSMod.MODID, "general_energy_storage");
-        registerAllowedDevice(IEMSMod.MODID, "energy_converter");
-        
-        IEMSMod.LOGGER.info("注册 IEMS 默认能源设备");
+        // 注册默认允许连接的设备
+        registerAllowedDevice("IEMS", "energy_storage");
+        registerAllowedDevice("IEMS", "energy_converter");
+        registerAllowedDevice("IEMS", "energy_relay");
+        registerAllowedDevice("IEMS", "energy_broadcast_tower");
     }
     
     public static EnergyConnectionManager getInstance() {
-        return INSTANCE;
+        if (instance == null) {
+            instance = new EnergyConnectionManager();
+        }
+        return instance;
     }
     
     /**
-     * 开始连接
+     * 开始一个新连接
      */
     public void startConnection(UUID connectionId, BlockPos startPos) {
-        connections.put(connectionId, new EnergyConnection(connectionId, startPos));
+        activeConnections.put(connectionId, new Connection(connectionId, startPos, null));
         IEMSMod.LOGGER.debug("开始连接：{} 从 {}", connectionId, startPos);
     }
     
     /**
      * 完成连接
      */
-    public void completeConnection(UUID connectionId, BlockPos endPos) {
-        EnergyConnection connection = connections.get(connectionId);
-        if (connection != null) {
-            connection.setEndPos(endPos);
-            connection.setActive(true);
-            IEMSMod.LOGGER.debug("完成连接：{} 从 {} 到 {}", connectionId, connection.getStartPos(), endPos);
-        }
+    public boolean completeConnection(UUID connectionId, BlockPos endPos) {
+        Connection connection = activeConnections.get(connectionId);
+        if (connection == null) return false;
+        
+        connection.endPos = endPos;
+        completedConnections.add(connection);
+        activeConnections.remove(connectionId);
+        
+        IEMSMod.LOGGER.debug("完成连接：{} 从 {} 到 {}", connectionId, connection.startPos, endPos);
+        return true;
     }
     
     /**
      * 移除连接
      */
     public void removeConnection(UUID connectionId) {
-        connections.remove(connectionId);
+        activeConnections.remove(connectionId);
         IEMSMod.LOGGER.debug("移除连接：{}", connectionId);
     }
     
     /**
-     * 获取所有活跃连接
+     * 移除连接
      */
-    public Collection<EnergyConnection> getAllConnections() {
-        return connections.values();
+    public void removeConnection(BlockPos pos) {
+        completedConnections.removeIf(c -> 
+            (c.startPos != null && c.startPos.equals(pos)) || 
+            (c.endPos != null && c.endPos.equals(pos)));
+        connectionCache.clear();
     }
     
     /**
-     * 注册允许连接的设备
-     * @param modId 模组 ID
-     * @param deviceName 设备名称 (方块 ID 的后缀)
+     * 注册允许连接的设备类型
      */
     public void registerAllowedDevice(String modId, String deviceName) {
-        ResourceLocation id = new ResourceLocation(modId, deviceName);
-        allowedDeviceTypes.add(id);
-        deviceRegistry.put(id, true);
-        IEMSMod.LOGGER.debug("注册允许连接的设备：{}", id);
+        ResourceLocation id = ResourceLocation.tryBuild(modId, deviceName);
+        if (id != null) {
+            allowedDevices.add(id);
+            IEMSMod.LOGGER.debug("注册允许连接的设备：{}", id);
+        }
     }
     
     /**
-     * 注册允许连接的设备 (使用 ResourceLocation)
+     * 移除允许连接的设备类型
      */
-    public void registerAllowedDevice(ResourceLocation deviceId) {
-        allowedDeviceTypes.add(deviceId);
-        deviceRegistry.put(deviceId, true);
-        IEMSMod.LOGGER.debug("注册允许连接的设备：{}", deviceId);
+    public void unregisterAllowedDevice(String modId, String deviceName) {
+        ResourceLocation id = ResourceLocation.tryBuild(modId, deviceName);
+        if (id != null) {
+            allowedDevices.remove(id);
+            IEMSMod.LOGGER.debug("移除允许连接的设备：{}", id);
+        }
     }
     
     /**
-     * 移除允许连接的设备
-     */
-    public void removeAllowedDevice(String modId, String deviceName) {
-        ResourceLocation id = new ResourceLocation(modId, deviceName);
-        allowedDeviceTypes.remove(id);
-        deviceRegistry.remove(id);
-        IEMSMod.LOGGER.debug("移除允许连接的设备：{}", id);
-    }
-    
-    /**
-     * 移除允许连接的设备
-     */
-    public void removeAllowedDevice(ResourceLocation deviceId) {
-        allowedDeviceTypes.remove(deviceId);
-        deviceRegistry.remove(deviceId);
-        IEMSMod.LOGGER.debug("移除允许连接的设备：{}", deviceId);
-    }
-    
-    /**
-     * 检查设备是否允许连接
-     * @param modId 模组 ID
-     * @param deviceName 设备名称
-     * @return 是否允许
-     */
-    public boolean isDeviceAllowed(String modId, String deviceName) {
-        ResourceLocation id = new ResourceLocation(modId, deviceName);
-        return isDeviceAllowed(id);
-    }
-    
-    /**
-     * 检查设备是否允许连接
+     * 检查设备类型是否允许连接
      */
     public boolean isDeviceAllowed(ResourceLocation deviceId) {
-        // 首先检查显式注册的设备
-        Boolean allowed = deviceRegistry.get(deviceId);
-        if (allowed != null) {
-            return allowed;
-        }
-        
-        // 然后检查是否匹配任何已注册的设备类型 (支持模糊匹配)
-        for (ResourceLocation allowedId : allowedDeviceTypes) {
-            // 完全匹配
-            if (allowedId.equals(deviceId)) {
-                return true;
-            }
-            // 模组 ID 匹配且设备名包含
-            if (allowedId.getNamespace().equals(deviceId.getNamespace()) &&
-                deviceId.getPath().contains(allowedId.getPath())) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    /**
-     * 检查设备是否允许连接 (通过方块描述 ID)
-     */
-    public boolean isDeviceAllowedByDescriptionId(String descriptionId) {
-        // descriptionId 格式如："block.iems.standard_energy_storage"
-        if (descriptionId == null || descriptionId.isEmpty()) {
-            return false;
-        }
-        
-        // 提取模组 ID 和设备名
-        String[] parts = descriptionId.split("\\.");
-        if (parts.length >= 3) {
-            String modId = parts[1]; // 如 "iemd"
-            String deviceName = String.join(".", Arrays.copyOfRange(parts, 2, parts.length));
-            return isDeviceAllowed(modId, deviceName);
-        }
-        
-        return false;
+        return allowedDevices.contains(deviceId);
     }
     
     /**
      * 获取所有允许连接的设备
      */
     public Set<ResourceLocation> getAllowedDevices() {
-        return Collections.unmodifiableSet(allowedDeviceTypes);
+        return Collections.unmodifiableSet(allowedDevices);
     }
     
     /**
-     * 清空所有注册 (用于测试或重置)
+     * 检查位置是否已连接到核心
      */
-    public void clearRegistry() {
-        allowedDeviceTypes.clear();
-        deviceRegistry.clear();
-        registerDefaultDevices();
-    }
-    
-    /**
-     * 能量连接数据
-     */
-    public static class EnergyConnection {
-        private final UUID id;
-        private BlockPos startPos;
-        private BlockPos endPos;
-        private boolean isActive;
-        private boolean isDepleted = false; // 电网耗尽时设为 true
+    public boolean isConnectedToCore(Level level, BlockPos pos) {
+        if (connectionCache.containsKey(pos)) {
+            return connectionCache.get(pos);
+        }
         
-        public EnergyConnection(UUID id, BlockPos startPos) {
+        // 检查是否是核心位置
+        if (EnergyGrid.getInstance().getCorePos() != null && 
+            EnergyGrid.getInstance().getCorePos().equals(pos)) {
+            connectionCache.put(pos, true);
+            return true;
+        }
+        
+        // 检查是否有连接到核心的路径
+        boolean connected = hasPathToCore(level, pos, new HashSet<>());
+        connectionCache.put(pos, connected);
+        return connected;
+    }
+    
+    /**
+     * 递归检查是否有路径到核心
+     */
+    private boolean hasPathToCore(Level level, BlockPos pos, Set<BlockPos> visited) {
+        if (visited.contains(pos)) return false;
+        visited.add(pos);
+        
+        // 检查是否是核心
+        if (EnergyGrid.getInstance().getCorePos() != null && 
+            EnergyGrid.getInstance().getCorePos().equals(pos)) {
+            return true;
+        }
+        
+        // 检查所有连接
+        for (Connection conn : completedConnections) {
+            if (conn.startPos != null && conn.startPos.equals(pos)) {
+                if (conn.endPos != null && hasPathToCore(level, conn.endPos, visited)) {
+                    return true;
+                }
+            }
+            if (conn.endPos != null && conn.endPos.equals(pos)) {
+                if (conn.startPos != null && hasPathToCore(level, conn.startPos, visited)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 清空缓存
+     */
+    public void clearCache() {
+        connectionCache.clear();
+    }
+    
+    /**
+     * 清空所有连接
+     */
+    public void clear() {
+        activeConnections.clear();
+        completedConnections.clear();
+        connectionCache.clear();
+    }
+    
+    /**
+     * 连接信息类
+     */
+    public static class Connection {
+        public final UUID id;
+        public BlockPos startPos;
+        public BlockPos endPos;
+        
+        public Connection(UUID id, BlockPos startPos, BlockPos endPos) {
             this.id = id;
             this.startPos = startPos;
-            this.isActive = false;
-        }
-        
-        public UUID getId() {
-            return id;
-        }
-        
-        public BlockPos getStartPos() {
-            return startPos;
-        }
-        
-        public BlockPos getEndPos() {
-            return endPos;
-        }
-        
-        public void setEndPos(BlockPos endPos) {
             this.endPos = endPos;
-        }
-        
-        public boolean isActive() {
-            return isActive;
-        }
-        
-        public void setActive(boolean active) {
-            isActive = active;
-        }
-        
-        public boolean isDepleted() {
-            return isDepleted;
-        }
-        
-        public void setDepleted(boolean depleted) {
-            isDepleted = depleted;
-        }
-        
-        /**
-         * 获取连接长度
-         */
-        public int getLength() {
-            if (endPos == null) return 0;
-            return (int) Math.round(startPos.distSqr(endPos));
         }
     }
 }

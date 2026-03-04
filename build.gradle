@@ -1,52 +1,13 @@
 plugins {
     id 'java'
     id 'idea'
-    id 'net.neoforged.gradle.userdev' version '7.0.96'
-}
-
-tasks.named('wrapper', Wrapper).configure {
-    distributionType = Wrapper.DistributionType.BIN
+    id 'net.neoforged.gradle.userdev' version '7.0.145'
 }
 
 version = '0.6.0'
 group = 'com.dlzstudio.iems'
 
-base {
-    archives_name = 'IEMS'
-}
-
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
-
-runs {
-    configureEach {
-        systemProperty 'forge.enabled.gameTestNamespaces', 'IEMS'
-        ideName = "NeoForge ${it.name} (${project.path})"
-        modSource project.sourceSets.main
-    }
-
-    client {
-        systemProperty 'neoforge.enabledGameTestNamespaces', 'IEMS'
-    }
-
-    server {
-        systemProperty 'neoforge.enabledGameTestNamespaces', 'IEMS'
-        programArgument '--nogui'
-    }
-
-    gameTestServer {
-        systemProperty 'neoforge.enabledGameTestNamespaces', 'IEMS'
-    }
-
-    data {
-        programArguments.addAll '--mod', 'IEMS', '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-    }
-}
-
-sourceSets.main.resources { srcDir 'src/generated/resources' }
-
-repositories {
-    mavenLocal()
-}
 
 dependencies {
     implementation "net.neoforged:neoforge:21.1.74"
@@ -54,12 +15,4 @@ dependencies {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 21
-}
-
-idea {
-    module {
-        downloadSources = true
-        downloadJavadoc = true
-    }
 }

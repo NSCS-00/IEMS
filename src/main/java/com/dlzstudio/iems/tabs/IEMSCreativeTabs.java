@@ -11,20 +11,16 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.function.Supplier;
 
-/**
- * 创造模式标签页注册
- */
 public class IEMSCreativeTabs {
-    public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = 
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
         DeferredRegister.create(Registries.CREATIVE_MODE_TAB, IEMSMod.MODID);
-    
+
     public static final Supplier<CreativeModeTab> MAIN_TAB = CREATIVE_MODE_TABS.register(
         "main",
         () -> CreativeModeTab.builder()
-            .icon(() -> new ItemStack(IEMSBlocks.CORE_BLOCK.get()))
+            .icon(() -> new ItemStack(IEMSBlocks.ENERGY_CONVERTER.get()))
             .title(Component.literal("综合能源管理系统"))
             .displayItems((params, output) -> {
-                // 添加所有方�?                output.accept(IEMSBlocks.CORE_BLOCK.get());
                 output.accept(IEMSBlocks.STANDARD_ENERGY_STORAGE.get());
                 output.accept(IEMSBlocks.GENERAL_ENERGY_STORAGE.get());
                 output.accept(IEMSBlocks.ENERGY_CONVERTER.get());
@@ -33,8 +29,12 @@ public class IEMSCreativeTabs {
             })
             .build()
     );
-    
+
     public static void register(IEventBus modEventBus) {
         CREATIVE_MODE_TABS.register(modEventBus);
+    }
+    
+    public static void registerBlocks() {
+        // 用于初始化方块注册
     }
 }

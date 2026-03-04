@@ -4,7 +4,6 @@ import com.dlzstudio.iems.IEMSMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
-import org.apache.logging.log4j.Level;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,12 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 电网核心注册表
  * 允许其他 MOD 注册自己的核心方块/多方块结构
- * 
- * 核心唯一性规则:
- * 1. 世界中只能有一个活跃核心
- * 2. 多个 MOD 注册时，根据优先级和加载顺序选择
- * 3. 尝试放置第二个核心会被阻止
- * 4. 出现多个核心会导致游戏崩溃
+ * 世界中只能有一个核心
  */
 public class GridCoreRegistry {
     
@@ -32,7 +26,9 @@ public class GridCoreRegistry {
     
     private static final Set<String> DLZSTUDIO_MODS = Set.of("IEMS", "dlzstudio", "plasmastudio");
     
-    @FunctionalInterface
+    /**
+     * 核心提供者接口
+     */
     public interface CoreProvider {
         boolean isValidCore(Level level, BlockPos pos);
         EnergyValue getEnergy(Level level, BlockPos pos);
@@ -46,6 +42,9 @@ public class GridCoreRegistry {
         EnergyValue getCapacity(Level level, BlockPos pos);
     }
     
+    /**
+     * 设置核心名称
+     */
     public static void setCoreName(String name) {
         if (name != null && !name.isEmpty()) {
             coreName = name;
@@ -54,6 +53,9 @@ public class GridCoreRegistry {
         }
     }
     
+    /**
+     * 获取核心名称
+     */
     public static String getCoreName() {
         return coreName;
     }
@@ -65,6 +67,9 @@ public class GridCoreRegistry {
         return String.format("%s-%05d", coreName, coreNameCounter);
     }
     
+    /**
+     * 注册核心提供者
+     */
     public static boolean register(ResourceLocation id, CoreProvider provider) {
         if (CORE_PROVIDERS.containsKey(id)) {
             IEMSMod.LOGGER.warn("[IEMS 警告] 核心提供者已存在：{}，注册被忽略", id);
@@ -93,6 +98,9 @@ public class GridCoreRegistry {
         return activeCorePos != null && activeCorePos.equals(pos);
     }
     
+    /**
+     * 检查位置是否为核心
+     */
     public static ResourceLocation checkCore(Level level, BlockPos pos) {
         for (Map.Entry<ResourceLocation, CoreProvider> entry : CORE_PROVIDERS.entrySet()) {
             if (entry.getValue().isValidCore(level, pos)) {
@@ -106,6 +114,9 @@ public class GridCoreRegistry {
         return CORE_PROVIDERS.get(id);
     }
     
+    /**
+     * 尝试激活核心
+     */
     public static boolean tryActivateCore(Level level, BlockPos pos, ResourceLocation providerId) {
         if (REGISTERED_CORE_POSITIONS.contains(pos)) {
             IEMSMod.LOGGER.warn("[IEMS 警告] 位置 {} 已注册为核心，重复激活被拒绝", pos);
@@ -113,7 +124,6 @@ public class GridCoreRegistry {
         }
         
         if (activeCoreId != null && activeCorePos != null) {
-            // 检测到多个核心
             List<BlockPos> newCores = new ArrayList<>();
             newCores.add(pos);
             
@@ -139,7 +149,6 @@ public class GridCoreRegistry {
                 IEMSMod.LOGGER.error("[IEMS 错误] 新核心激活被拒绝");
             }
             
-            preventCorePlacement(level, pos);
             return false;
         }
         
@@ -204,12 +213,9 @@ public class GridCoreRegistry {
         }
     }
     
-    private static void preventCorePlacement(Level level, BlockPos pos) {
-        if (level != null && !level.isClientSide) {
-            // 可以破坏尝试放置的方块
-        }
-    }
-    
+    /**
+     * 注销核心
+     */
     public static void unregisterCore(BlockPos pos) {
         if (REGISTERED_CORE_POSITIONS.remove(pos)) {
             if (activeCorePos != null && activeCorePos.equals(pos)) {
@@ -222,6 +228,9 @@ public class GridCoreRegistry {
         }
     }
     
+    /**
+     * 检查多个核心
+     */
     public static void checkForMultipleCores(Level level) {
         Set<BlockPos> validCores = new HashSet<>();
         
@@ -233,9 +242,9 @@ public class GridCoreRegistry {
         }
         
         if (validCores.size() > 1) {
-            IEMSMod.LOGGER.fatal("[IEMS 致命错误] 检测到多个活跃的{}核心！", coreName);
-            IEMSMod.LOGGER.fatal("[IEMS 致命错误] 位置：{}", formatPositions(validCores));
-            IEMSMod.LOGGER.fatal("[IEMS 致命错误] 这违反了核心唯一性原则，已强制终止加载");
+            IEMSMod.LOGGER.error("[IEMS 致命错误] 检测到多个活跃的{}核心！", coreName);
+            IEMSMod.LOGGER.error("[IEMS 致命错误] 位置：{}", formatPositions(validCores));
+            IEMSMod.LOGGER.error("[IEMS 致命错误] 这违反了核心唯一性原则，已强制终止加载");
             
             throw new MultipleCoresDetectedException("检测到多个活跃核心");
         }
@@ -250,6 +259,9 @@ public class GridCoreRegistry {
         return sb.toString();
     }
     
+    /**
+     * 检查是否可以放置新核心
+     */
     public static boolean canPlaceNewCore(BlockPos pos) {
         if (activeCoreId != null && activeCorePos != null) {
             IEMSMod.LOGGER.error("[IEMS 错误] 世界中已存在核心 {} (位置：{})。每个世界只能有一个核心。", activeCoreId, activeCorePos);
@@ -258,6 +270,9 @@ public class GridCoreRegistry {
         return true;
     }
     
+    /**
+     * 清空所有注册信息
+     */
     public static void clear() {
         CORE_PROVIDERS.clear();
         REGISTERED_CORE_POSITIONS.clear();

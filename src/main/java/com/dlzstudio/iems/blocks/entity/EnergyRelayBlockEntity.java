@@ -1,59 +1,47 @@
 package com.dlzstudio.iems.blocks.entity;
 
 import com.dlzstudio.iems.blocks.EnergyRelayBlock;
+import com.dlzstudio.iems.blocks.IEMSBlocks;
 import com.dlzstudio.iems.energy.EnergyGrid;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.UUID;
 
-/**
- * 能源中继传输器方块实体
- * 
- * 作用：用于标记广播塔接入点，必须与核心连接才能工作
- * 连接规则:
- * - 中继器可以连接到核心或其他中继器
- * - 中继器可以连接到广播塔
- * - 广播塔必须通过中继器或直接与核心连接才能工作
- */
 public class EnergyRelayBlockEntity extends BlockEntity {
     
     private boolean isInConnectionMode = false;
     private UUID connectionId;
     private BlockPos connectedPos;
     
-    // 连接距离限制
     private static final int MAX_DISTANCE = EnergyRelayBlock.MAX_CONNECTION_DISTANCE;
-    private static final int DISCONNECT_TOLERANCE = 20;
+    private static final int DISCONNECT_TOLERANCE = 20; // 断开容差
     
     public EnergyRelayBlockEntity(BlockPos pos, BlockState state) {
-        super(IEMSEntities.ENERGY_RELAY_ENTITY.get(), pos, state);
+        super(null, pos, state);
     }
     
     @Override
-    public void onChunkUnloaded() {
-        super.onChunkUnloaded();
-        if (connectionId != null) {
-            EnergyConnectionManager.getInstance().removeConnection(connectionId);
+    public void onLoad() {
+        super.onLoad();
+        if (level != null && !level.isClientSide) {
+            EnergyGrid.getInstance().registerRelay(worldPosition);
         }
-        EnergyGrid.getInstance().unregisterRelay(worldPosition);
     }
     
     @Override
     public void setRemoved() {
+        if (level != null && !level.isClientSide) {
+            EnergyGrid.getInstance().unregisterRelay(worldPosition);
+            EnergyConnectionManager.getInstance().removeConnection(worldPosition);
+        }
         super.setRemoved();
-        EnergyGrid.getInstance().unregisterRelay(worldPosition);
-    }
-    
-    /**
-     * 初始化中继器
-     */
-    public void initialize() {
-        EnergyGrid.getInstance().registerRelay(worldPosition);
     }
     
     /**
@@ -61,10 +49,12 @@ public class EnergyRelayBlockEntity extends BlockEntity {
      */
     public void toggleConnectionMode(Player player) {
         if (isInConnectionMode) {
+            // 取消连接模式
             isInConnectionMode = false;
             connectionId = null;
             player.displayClientMessage(Component.literal("已取消连接模式").withStyle(ChatFormatting.RED), true);
         } else {
+            // 开始连接模式
             isInConnectionMode = true;
             connectionId = UUID.randomUUID();
             EnergyConnectionManager.getInstance().startConnection(connectionId, worldPosition);
@@ -74,137 +64,106 @@ public class EnergyRelayBlockEntity extends BlockEntity {
     }
     
     /**
-     * 尝试完成连接
+     * 尝试完成连接（由方块调用）
      */
-    public void tryCompleteConnection(Player player) {
-        if (!isInConnectionMode || connectionId == null) {
-            return;
-        }
+    public void tryCompleteConnection(Player player, BlockPos targetPos) {
+        if (!isInConnectionMode || connectionId == null) return;
         
-        BlockPos targetPos = findTargetBlock(player);
-        if (targetPos == null) {
-            player.displayClientMessage(Component.literal("未找到有效目标").withStyle(ChatFormatting.RED), true);
-            return;
-        }
+        // 检查距离
+        int distance = (int) Math.round(worldPosition.distSqr(targetPos));
+        int maxDistanceSq = MAX_DISTANCE * MAX_DISTANCE;
         
-        int distance = calculateDistance(worldPosition, targetPos);
-        if (distance > MAX_DISTANCE) {
-            player.displayClientMessage(Component.literal("距离过远！最大距离：" + MAX_DISTANCE).withStyle(ChatFormatting.RED), true);
-            isInConnectionMode = false;
-            EnergyConnectionManager.getInstance().removeConnection(connectionId);
-            return;
-        }
-        
-        BlockEntity targetEntity = level.getBlockEntity(targetPos);
-        if (targetEntity instanceof EnergyRelayBlockEntity || 
-            targetEntity instanceof EnergyBroadcastTowerBlockEntity ||
-            targetEntity instanceof CoreBlockEntity) {
-            
-            // 创建连接
-            EnergyConnectionManager.getInstance().completeConnection(connectionId, targetPos);
-            EnergyGrid.getInstance().addConnection(worldPosition, targetPos);
-            
-            this.connectedPos = targetPos;
-            
-            player.displayClientMessage(Component.literal("连接成功！距离：" + distance + "/" + MAX_DISTANCE).withStyle(ChatFormatting.GREEN), true);
-            
+        if (distance > maxDistanceSq) {
+            player.displayClientMessage(Component.literal("距离过远！最大距离：" + MAX_DISTANCE + " 格").withStyle(ChatFormatting.RED), true);
             isInConnectionMode = false;
             connectionId = null;
-            setChanged();
-        } else {
-            player.displayClientMessage(Component.literal("目标不是有效的连接设备").withStyle(ChatFormatting.RED), true);
+            return;
         }
+        
+        // 检查目标方块实体
+        if (level == null) return;
+        BlockEntity targetEntity = level.getBlockEntity(targetPos);
+        
+        boolean isValidTarget = targetEntity instanceof EnergyRelayBlockEntity || 
+                               targetEntity instanceof EnergyBroadcastTowerBlockEntity;
+        
+        if (!isValidTarget) {
+            player.displayClientMessage(Component.literal("目标不是有效的连接设备").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        
+        // 检查视线（仅中继器之间需要）
+        if (targetEntity instanceof EnergyRelayBlockEntity) {
+            if (!hasClearSight(targetPos)) {
+                player.displayClientMessage(Component.literal("目标被完全遮挡！需要≥3 层完整方块").withStyle(ChatFormatting.RED), true);
+                return;
+            }
+        }
+        
+        // 完成连接
+        EnergyConnectionManager.getInstance().completeConnection(connectionId, targetPos);
+        EnergyGrid.getInstance().addConnection(worldPosition, targetPos);
+        
+        this.connectedPos = targetPos;
+        
+        player.displayClientMessage(Component.literal("连接成功！距离：" + 
+            Math.round(Math.sqrt(distance)) + "/" + MAX_DISTANCE).withStyle(ChatFormatting.GREEN), true);
+        
+        isInConnectionMode = false;
+        connectionId = null;
+        setChanged();
     }
     
     /**
-     * 查找目标方块
+     * 查找目标方块（由方块 use 方法调用）
      */
-    private BlockPos findTargetBlock(Player player) {
-        var start = player.getEyePosition(1.0f);
-        var look = player.getLookAngle();
-        var end = start.add(look.scale(MAX_DISTANCE + DISCONNECT_TOLERANCE));
+    public BlockPos findTargetBlock(Player player) {
+        if (level == null) return null;
+        
+        Vec3 start = player.getEyePosition(1.0f);
+        Vec3 look = player.getLookAngle();
+        int range = MAX_DISTANCE + DISCONNECT_TOLERANCE;
+        Vec3 end = start.add(look.scale(range));
         
         var hitResult = level.clip(new net.minecraft.world.level.ClipContext(
             start, end,
             net.minecraft.world.level.ClipContext.Block.OUTLINE,
             net.minecraft.world.level.ClipContext.Fluid.NONE,
-            null
+            player
         ));
         
-        if (hitResult != null) {
-            return hitResult.getBlockPos();
-        }
-        return null;
-    }
-    
-    private int calculateDistance(BlockPos pos1, BlockPos pos2) {
-        return (int) Math.round(pos1.distSqr(pos2));
+        return hitResult != null ? hitResult.getBlockPos() : null;
     }
     
     /**
-     * Tick 更新
+     * 检查是否有清晰的视线
      */
+    private boolean hasClearSight(BlockPos target) {
+        if (level == null) return false;
+        return com.dlzstudio.iems.util.SightCheckUtil.hasLineOfSight(level, worldPosition, target);
+    }
+    
     public void tick() {
-        // 检查连接是否有效
-        if (connectedPos != null && level != null) {
+        if (level == null || level.isClientSide) return;
+        
+        // 检查连接是否仍然有效
+        if (connectedPos != null) {
             BlockEntity targetEntity = level.getBlockEntity(connectedPos);
             if (targetEntity == null || targetEntity.isRemoved()) {
-                // 目标失效，断开连接
                 EnergyGrid.getInstance().removeConnection(worldPosition, connectedPos);
+                EnergyConnectionManager.getInstance().removeConnection(worldPosition);
                 connectedPos = null;
                 setChanged();
             }
         }
-        
-        // 检查是否连接到核心
-        if (level != null && level.getGameTime() % 20 == 0) {
-            updateConnectionStatus();
-        }
     }
     
-    /**
-     * 更新连接状态显示
-     */
-    private void updateConnectionStatus() {
-        boolean connected = EnergyGrid.getInstance().isConnectedToCore(worldPosition);
-        if (!connected && !isInConnectionMode) {
-            // 未连接到核心，显示警告
-            // 可以通过粒子效果或其他方式提醒玩家
-        }
-    }
+    public boolean isInConnectionMode() { return isInConnectionMode; }
     
-    /**
-     * 获取连接状态显示
-     */
-    public Component getConnectionStatus() {
-        if (isInConnectionMode) {
-            return Component.literal("连接模式中...").withStyle(ChatFormatting.YELLOW);
-        }
-        if (connectedPos != null) {
-            int distance = calculateDistance(worldPosition, connectedPos);
-            boolean connectedToCore = EnergyGrid.getInstance().isConnectedToCore(worldPosition);
-            String status = connectedToCore ? "§a已连接" : "§c未连接到核心";
-            return Component.literal(status + " 距离：" + distance + "/" + MAX_DISTANCE);
-        }
-        return Component.literal("未连接").withStyle(ChatFormatting.GRAY);
-    }
-    
-    public boolean isInConnectionMode() {
-        return isInConnectionMode;
-    }
-    
-    public UUID getConnectionId() {
-        return connectionId;
-    }
-    
-    public BlockPos getConnectedPos() {
-        return connectedPos;
-    }
-    
-    /**
-     * 检查是否连接到核心
-     */
     public boolean isConnectedToCore() {
-        return EnergyGrid.getInstance().isConnectedToCore(worldPosition);
+        return EnergyGrid.getInstance().isConnectedToCore(worldPosition) ||
+               EnergyConnectionManager.getInstance().isConnectedToCore(level, worldPosition);
     }
+    
+    public BlockPos getConnectedPos() { return connectedPos; }
 }

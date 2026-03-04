@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "IEMS:block/energy_broadcast_tower"
-  }
-}

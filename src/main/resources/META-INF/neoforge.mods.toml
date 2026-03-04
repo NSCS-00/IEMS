@@ -8,27 +8,19 @@ version="0.6.0"
 displayName="Integrated Energy Management System"
 authors="等离子工作室 (DLZstudio)"
 description='''
-综合能源管理系统 - 添加高精度能源单位和能源管理方块
+综合能源管理系统 - 提供高精度能源管理、Web 监控界面和灵活的电网架构
 '''
-logoFile="logo.png"
 
 [[dependencies.IEMS]]
-modId="neoforge"
-type="required"
-versionRange="[21.1.74,)"
-ordering="NONE"
-side="BOTH"
+    modId="neoforge"
+    type="required"
+    versionRange="[21.1.74,)"
+    ordering="NONE"
+    side="BOTH"
 
 [[dependencies.IEMS]]
-modId="minecraft"
-type="required"
-versionRange="[1.21.1,1.22)"
-ordering="NONE"
-side="BOTH"
-
-[[dependencies.IEMS]]
-modId="ae2"
-type="optional"
-versionRange="[19.0.0,)"
-ordering="AFTER"
-side="BOTH"
+    modId="minecraft"
+    type="required"
+    versionRange="[1.21.1,)"
+    ordering="NONE"
+    side="BOTH"

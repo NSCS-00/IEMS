@@ -1,27 +1,21 @@
 # Gradle
 .gradle/
 build/
-out/
-logs/
+*.log
+
+# Build outputs
+build_output*.txt
+build_log.txt
 
 # IDE
 .idea/
 *.iml
-*.ipr
-*.iws
 .vscode/
-.settings/
-.project
-.classpath
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-
-# Temp files
+# Temporary files
 *.tmp
 *.bak
-*.swp
