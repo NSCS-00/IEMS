@@ -1,63 +1,63 @@
 # 综合能源管理系统 - 更新日志
 
-## [0.6.2] - 2026-03-04
+## [0.6.3] - 2026-03-04
 
 ### 新增
-- ✅ 能源标记方块 (Energy Marker Block)
-  - 使用结构空位贴图 (半透明网格)
-  - 无碰撞箱，不可渲染
-  - 通过 NBT 绑定到主机器
-  - 由其他 MOD 调用放置和绑定
-- ✅ 标记类型系统
-  - 0 = 边界标记
-  - 1 = 连接点标记
-  - 2 = 能量输入标记
-  - 3 = 能量输出标记
-- ✅ 标记绑定 API
-  - `setControllerPos(BlockPos)` - 绑定到主机器
-  - `setMarkerType(int)` - 设置标记类型
-  - `setMarkerId(String)` - 设置标记 ID
+- ✅ 标记方块碰撞箱
+  - 完整方块碰撞箱 (16x16x16)
+  - 阻挡玩家和实体移动
+  - 可作为机器结构的一部分
+- ✅ 创造模式显示控制
+  - 手持木棍才显示贴图
+  - 非创造模式或空手时不显示
+  - 方便多方块结构搭建
+- ✅ 标记方块渲染器
+  - 半透明网格贴图
+  - 根据标记类型显示不同颜色
+    - 白色 (0) = 边界标记
+    - 黄色 (1) = 连接点标记
+    - 绿色 (2) = 能量输入标记
+    - 红色 (3) = 能量输出标记
+- ✅ 右键查询功能
+  - 右键标记方块显示绑定信息
+  - 显示绑定的主机器坐标
+  - 未绑定时显示提示
 
 ### 变更
-- ✅ 移除设备大小定义接口 (`IMultiBlockDevice`)
-  - 改为由模组放置和绑定标记方块
-  - 更灵活的多方块结构定义
-- ✅ 更新 README 文档
-  - 添加标记方块说明
-  - 移除设备大小接口说明
-  - 更新多方块结构示例
-- ✅ 版本号更新为 0.6.2
+- ✅ 移除结构空位贴图
+  - 改为创造模式手持木棍显示
+  - 更清晰的视觉效果
+- ✅ 标记方块现在有碰撞箱
+  - 可以作为多方块结构的组成部分
+  - 阻挡光线和 Redstone 信号
+- ✅ 更新渲染器注册
+  - 使用 EntityRenderersEvent.RegisterRenderers
+  - 更规范的注册方式
 
-### API 变更
+### 修复
+- ✅ 修复标记方块无碰撞问题
+- ✅ 修复标记方块始终显示问题
 
-**旧方式 (已移除)**:
-```java
-// 实现 IMultiBlockDevice 接口
-public class MyMachine implements IMultiBlockDevice {
-    @Override
-    public int getWidth() { return 3; }
-    @Override
-    public int getHeight() { return 3; }
-}
+### 使用方式
+
+**创造模式下**:
+1. 手持木棍靠近标记方块
+2. 标记方块显示半透明网格
+3. 不同颜色代表不同标记类型
+4. 空手时标记方块不可见
+
+**多方块结构搭建**:
 ```
-
-**新方式 (推荐)**:
-```java
-// 由模组放置标记方块
-BlockPos markerPos = machinePos.offset(1, 0, 0);
-level.setBlock(markerPos, IEMSBlocks.ENERGY_MARKER.get().defaultBlockState(), 3);
-
-BlockEntity be = level.getBlockEntity(markerPos);
-if (be instanceof EnergyMarkerBlockEntity marker) {
-    marker.setControllerPos(machinePos);
-    marker.setMarkerType(0); // 边界标记
-    marker.setMarkerId("corner_1");
-}
+1. 放置主机方块
+2. 在周围放置标记方块
+3. 标记方块自动绑定到主机
+4. 手持木棍检查标记位置
+5. 完成多方块结构
 ```
 
 ---
 
-## [0.6.1] - 2026-03-04
+## [0.6.2] - 2026-03-04
 
 ### 新增
 - ✅ Web 监控界面完整实现

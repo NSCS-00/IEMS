@@ -4,7 +4,7 @@ plugins {
     id 'net.neoforged.gradle.userdev' version '7.0.145'
 }
 
-version = '0.6.2'
+version = '0.6.3'
 group = 'com.dlzstudio.iems'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)

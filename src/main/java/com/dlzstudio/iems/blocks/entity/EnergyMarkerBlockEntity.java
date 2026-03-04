@@ -5,10 +5,24 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * 能源标记方块实体
+ * 
+ * NBT 数据:
+ * - controllerPos: 主机器位置
+ * - markerType: 标记类型 (0=边界，1=连接点，2=输入，3=输出)
+ * - markerId: 标记 ID(用于区分同一机器的多个标记)
+ * 
+ * 渲染规则:
+ * - 创造模式下手持木棍才显示贴图
+ * - 作为绑定机器的一部分渲染
+ */
 public class EnergyMarkerBlockEntity extends BlockEntity {
     
     @Nullable
@@ -17,7 +31,7 @@ public class EnergyMarkerBlockEntity extends BlockEntity {
     private String markerId = "";
     
     public EnergyMarkerBlockEntity(BlockPos pos, BlockState state) {
-        super(null, pos, state);
+        super(IEMSBlocks.ENERGY_MARKER_ENTITY.get(), pos, state);
     }
     
     @Override
@@ -77,18 +91,49 @@ public class EnergyMarkerBlockEntity extends BlockEntity {
         sync();
     }
     
+    /**
+     * 检查玩家是否应该看到标记方块
+     * 创造模式下手持木棍才显示
+     */
+    public boolean shouldRender(Player player) {
+        if (level == null || level.isClientSide) {
+            return false;
+        }
+        
+        // 检查是否是创造模式
+        if (!player.isCreative()) {
+            return false;
+        }
+        
+        // 检查是否手持木棍
+        var mainHandItem = player.getMainHandItem();
+        var offHandItem = player.getOffhandItem();
+        
+        return mainHandItem.is(Items.STICK) || offHandItem.is(Items.STICK);
+    }
+    
+    /**
+     * 同步到客户端
+     */
     public void sync() {
         if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            ClientboundBlockEntityDataPacket packet = ClientboundBlockEntityDataPacket.create(this);
+            level.getChunkSource().broadcast(this, packet);
         }
     }
     
+    /**
+     * 检查标记是否有效（主机器是否存在）
+     */
     public boolean isValid() {
         if (controllerPos == null || level == null) return false;
         BlockEntity controller = level.getBlockEntity(controllerPos);
         return controller != null && !controller.isRemoved();
     }
     
+    /**
+     * 移除绑定
+     */
     public void unbind() {
         this.controllerPos = null;
         this.markerType = 0;
