@@ -102,6 +102,7 @@ public class EnergyBroadcastTowerBlockEntity extends BlockEntity {
 
     /**
      * 尝试完成连接
+     * 连接标记方块等同于连接主机
      */
     public void tryCompleteConnection(Player player, BlockPos targetPos) {
         if (!isInConnectionMode || connectionId == null) return;
@@ -132,7 +133,7 @@ public class EnergyBroadcastTowerBlockEntity extends BlockEntity {
             return;
         }
 
-        // 检查视线 (从信号源到目标)
+        // 检查视线 (从信号源到目标) - 标记方块和主机都不算遮挡
         if (!hasClearSightFromSource(targetPos)) {
             player.displayClientMessage(Component.literal("目标被完全遮挡！需要≥3 层完整方块").withStyle(ChatFormatting.RED), true);
             return;
@@ -141,7 +142,11 @@ public class EnergyBroadcastTowerBlockEntity extends BlockEntity {
         // 完成连接
         connectDevice(targetPos);
 
-        player.displayClientMessage(Component.literal("连接成功！距离：" +
+        // 显示连接信息
+        String targetName = targetEntity instanceof EnergyMarkerBlockEntity ? 
+            "标记方块 (主机：" + ((EnergyMarkerBlockEntity) targetEntity).getControllerPos() + ")" : 
+            targetEntity.getClass().getSimpleName();
+        player.displayClientMessage(Component.literal("连接成功！目标：" + targetName + " 距离：" +
             Math.round(Math.sqrt(distance)) + "/" + MAX_DISTANCE).withStyle(ChatFormatting.GREEN), true);
 
         isInConnectionMode = false;
@@ -150,10 +155,22 @@ public class EnergyBroadcastTowerBlockEntity extends BlockEntity {
     }
 
     /**
-     * 连接设备
+     * 连接设备 (包括标记方块)
+     * 连接标记方块等同于连接主机
      */
     private void connectDevice(BlockPos pos) {
         connectedDevices.add(pos);
+        
+        // 如果是标记方块，同时记录主机位置
+        BlockEntity device = level.getBlockEntity(pos);
+        if (device instanceof EnergyMarkerBlockEntity marker) {
+            BlockPos controllerPos = marker.getControllerPos();
+            if (controllerPos != null) {
+                // 标记方块的主机也算作已连接
+                connectedDevices.add(controllerPos);
+            }
+        }
+        
         EnergyGrid.getInstance().addConnection(worldPosition, pos);
         setChanged();
     }

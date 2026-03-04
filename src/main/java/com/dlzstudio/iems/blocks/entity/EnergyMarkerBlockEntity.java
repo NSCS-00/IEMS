@@ -251,6 +251,15 @@ public class EnergyMarkerBlockEntity extends BlockEntity {
     }
 
     /**
+     * 获取主机方块实体
+     */
+    @Nullable
+    public BlockEntity getControllerEntity() {
+        if (controllerPos == null || level == null) return null;
+        return level.getBlockEntity(controllerPos);
+    }
+
+    /**
      * tick - 处理能量传输
      */
     public void tick() {

@@ -93,6 +93,7 @@ public class SightCheckUtil {
         if (blockName.contains("energy_converter")) return true;
         if (blockName.contains("energy_relay")) return true;
         if (blockName.contains("energy_broadcast")) return true;
+        if (blockName.contains("energy_marker")) return true; // 标记方块不算遮挡
         return false;
     }
     
