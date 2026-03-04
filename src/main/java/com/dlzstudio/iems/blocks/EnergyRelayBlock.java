@@ -32,6 +32,6 @@ public class EnergyRelayBlock extends Block implements EntityBlock {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new EnergyRelayBlockEntity(pos, state);
+        return new EnergyRelayBlockEntity(IEMSBlocks.ENERGY_RELAY_ENTITY.get(), pos, state);
     }
 }

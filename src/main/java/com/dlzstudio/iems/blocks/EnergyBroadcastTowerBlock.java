@@ -33,6 +33,6 @@ public class EnergyBroadcastTowerBlock extends Block implements EntityBlock {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new EnergyBroadcastTowerBlockEntity(pos, state);
+        return new EnergyBroadcastTowerBlockEntity(IEMSBlocks.ENERGY_BROADCAST_TOWER_ENTITY.get(), pos, state);
     }
 }

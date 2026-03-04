@@ -1,5 +1,36 @@
 # 综合能源管理系统 - 更新日志
 
+## [0.6.1] - 2026-03-04
+
+### 新增
+- ✅ GeoLib 3D 模型支持
+  - 添加 Geckolib 4.7.2 依赖
+  - 支持 PMX/GeoJSON 格式模型
+- ✅ 广播塔 3D 模型渲染
+  - electric_pylon.geo.json 模型
+  - 高精度 3D 外观
+- ✅ 中继器 3D 模型渲染
+  - relay_tower.geo.json 模型
+  - 支持动画（预留）
+- ✅ 方块实体 GeoLib 支持
+  - EnergyBroadcastTowerBlockEntity 实现 GeoBlockEntity
+  - EnergyRelayBlockEntity 实现 GeoBlockEntity
+
+### 变更
+- ✅ 版本号更新为 0.6.1
+- ✅ 模型文件整合
+  - blockstates/ - 方块状态定义
+  - geo/ - GeoLib 3D 模型
+  - models/ - 方块/物品模型
+  - textures/ - 贴图文件
+
+### 依赖
+- Geckolib: 4.7.2+ (客户端必需)
+- NeoForge: 21.1.74+
+- Minecraft: 1.21.1
+
+---
+
 ## [0.6.0] - 2026-03-04
 
 ### 新增
