@@ -1,37 +1,63 @@
 # 综合能源管理系统 - 更新日志
 
-## [0.6.1] - 2026-03-04
+## [0.6.2] - 2026-03-04
 
 ### 新增
-- ✅ GeoLib 3D 模型支持
-  - 添加 Geckolib 4.7.2 依赖
-  - 支持 PMX/GeoJSON 格式模型
-- ✅ 广播塔 3D 模型渲染
-  - electric_pylon.geo.json 模型
-  - 高精度 3D 外观
-- ✅ 中继器 3D 模型渲染
-  - relay_tower.geo.json 模型
-  - 支持动画（预留）
-- ✅ 方块实体 GeoLib 支持
-  - EnergyBroadcastTowerBlockEntity 实现 GeoBlockEntity
-  - EnergyRelayBlockEntity 实现 GeoBlockEntity
+- ✅ 能源标记方块 (Energy Marker Block)
+  - 使用结构空位贴图 (半透明网格)
+  - 无碰撞箱，不可渲染
+  - 通过 NBT 绑定到主机器
+  - 由其他 MOD 调用放置和绑定
+- ✅ 标记类型系统
+  - 0 = 边界标记
+  - 1 = 连接点标记
+  - 2 = 能量输入标记
+  - 3 = 能量输出标记
+- ✅ 标记绑定 API
+  - `setControllerPos(BlockPos)` - 绑定到主机器
+  - `setMarkerType(int)` - 设置标记类型
+  - `setMarkerId(String)` - 设置标记 ID
 
 ### 变更
-- ✅ 版本号更新为 0.6.1
-- ✅ 模型文件整合
-  - blockstates/ - 方块状态定义
-  - geo/ - GeoLib 3D 模型
-  - models/ - 方块/物品模型
-  - textures/ - 贴图文件
+- ✅ 移除设备大小定义接口 (`IMultiBlockDevice`)
+  - 改为由模组放置和绑定标记方块
+  - 更灵活的多方块结构定义
+- ✅ 更新 README 文档
+  - 添加标记方块说明
+  - 移除设备大小接口说明
+  - 更新多方块结构示例
+- ✅ 版本号更新为 0.6.2
 
-### 依赖
-- Geckolib: 4.7.2+ (客户端必需)
-- NeoForge: 21.1.74+
-- Minecraft: 1.21.1
+### API 变更
+
+**旧方式 (已移除)**:
+```java
+// 实现 IMultiBlockDevice 接口
+public class MyMachine implements IMultiBlockDevice {
+    @Override
+    public int getWidth() { return 3; }
+    @Override
+    public int getHeight() { return 3; }
+}
+```
+
+**新方式 (推荐)**:
+```java
+// 由模组放置标记方块
+BlockPos markerPos = machinePos.offset(1, 0, 0);
+level.setBlock(markerPos, IEMSBlocks.ENERGY_MARKER.get().defaultBlockState(), 3);
+
+BlockEntity be = level.getBlockEntity(markerPos);
+if (be instanceof EnergyMarkerBlockEntity marker) {
+    marker.setControllerPos(machinePos);
+    marker.setMarkerType(0); // 边界标记
+    marker.setMarkerId("corner_1");
+}
+```
 
 ---
 
-## [0.6.0] - 2026-03-04
+## [0.6.1] - 2026-03-04
 
 ### 新增
 - ✅ Web 监控界面完整实现

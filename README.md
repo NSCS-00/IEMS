@@ -278,6 +278,49 @@
 
 视线检查:
 - 设备任意一个方块没有被完全遮挡即可通电
+
+### 6. 能源标记方块 (v0.6.2 新增)
+
+| 属性 | 内容 |
+|------|------|
+| **英文名称** | Energy Marker Block |
+| **渲染** | 结构空位贴图 (半透明网格) |
+| **碰撞** | 无碰撞箱 |
+| **获取** | 仅代码放置 |
+| **功能** | 多方块结构标记 |
+
+**特性:**
+- 使用结构空位贴图（半透明网格）
+- 无碰撞箱，不阻挡玩家移动
+- 不参与视线遮挡计算
+- 可通过 NBT 绑定到主机器
+- 由其他 MOD 调用放置和绑定
+- 不在创造模式标签页显示
+
+**标记类型:**
+| ID | 类型 | 说明 |
+|----|------|------|
+| 0 | 边界标记 | 定义机器边界 |
+| 1 | 连接点标记 | 定义连接点位置 |
+| 2 | 能量输入标记 | 定义能量输入点 |
+| 3 | 能量输出标记 | 定义能量输出点 |
+
+**使用示例:**
+```java
+// 放置标记方块
+BlockPos markerPos = machinePos.offset(1, 0, 0);
+level.setBlock(markerPos, 
+    IEMSBlocks.ENERGY_MARKER.get().defaultBlockState(), 
+    3);
+
+// 绑定到主机器
+BlockEntity be = level.getBlockEntity(markerPos);
+if (be instanceof EnergyMarkerBlockEntity marker) {
+    marker.setControllerPos(machinePos);  // 绑定位置
+    marker.setMarkerType(0);              // 边界标记
+    marker.setMarkerId("corner_1");       // 标记 ID
+}
+```
 - 不完整/透明方块不算遮挡
 - 完整方块阻挡≥3 层才算完全遮挡
 - 如果 MOD 没有提供设备大小，默认检查本体方块
@@ -290,30 +333,58 @@
     └───────────────┘
 ```
 
-**多方块结构支持:**
+**多方块结构支持 (v0.6.2+):**
 
-其他 MOD 可以实现 `IMultiBlockDevice` 接口来声明设备占用的空间：
+其他 MOD 可以使用能源标记方块来定义多方块结构的占用空间：
 
 ```java
-import com.dlzstudio.iems.blocks.entity.IMultiBlockDevice;
+import com.dlzstudio.iems.blocks.IEMSBlocks;
+import com.dlzstudio.iems.blocks.entity.EnergyMarkerBlockEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 
-public class MyMultiBlockEntity extends BlockEntity implements IMultiBlockDevice {
-    @Override
-    public List<BlockPos> getOccupiedOffsets() {
-        // 返回相对于本体位置的所有偏移
-        // 例如 3x3x2 结构:
-        List<BlockPos> offsets = new ArrayList<>();
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                for (int y = 0; y <= 1; y++) {
-                    offsets.add(new BlockPos(x, y, z));
+// 在你的多方块机器放置时调用
+public void placeMarkers(Level level, BlockPos machinePos) {
+    // 3x3x2 结构示例
+    for (int x = -1; x <= 1; x++) {
+        for (int z = -1; z <= 1; z++) {
+            for (int y = 0; y <= 1; y++) {
+                if (x == 0 && z == 0 && y == 0) continue; // 跳过机器本体
+                
+                BlockPos markerPos = machinePos.offset(x, y, z);
+                
+                // 放置标记方块
+                level.setBlock(markerPos, 
+                    IEMSBlocks.ENERGY_MARKER.get().defaultBlockState(), 
+                    3);
+                
+                // 绑定到主机器
+                BlockEntity be = level.getBlockEntity(markerPos);
+                if (be instanceof EnergyMarkerBlockEntity marker) {
+                    marker.setControllerPos(machinePos);
+                    marker.setMarkerType(0); // 0=边界标记
+                    marker.setMarkerId("multiblock_" + machinePos);
                 }
             }
         }
-        return offsets;
     }
 }
 ```
+
+**标记类型**:
+| ID | 类型 | 说明 |
+|----|------|------|
+| 0 | 边界标记 | 定义机器边界 |
+| 1 | 连接点标记 | 定义连接点位置 |
+| 2 | 能量输入标记 | 定义能量输入点 |
+| 3 | 能量输出标记 | 定义能量输出点 |
+
+**标记方块特性**:
+- 使用结构空位贴图（半透明网格，仅在调试模式可见）
+- 无碰撞箱，不阻挡玩家移动
+- 不参与视线遮挡计算
+- 可通过 NBT 绑定到主机器
+- 由其他 MOD 调用放置和绑定
 
 ---
 
@@ -632,4 +703,4 @@ IEMS/
 
 **祝您游戏愉快！**
 
-*综合能源管理系统 v0.6.0*
+*综合能源管理系统 v0.6.2*
