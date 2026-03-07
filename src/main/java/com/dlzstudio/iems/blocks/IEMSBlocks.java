@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 public class IEMSBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(IEMSMod.MODID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(IEMSMod.MODID);
-    // BlockEntityType 注册移动到 com.dlzstudio.iems.entities.IEMSEntities
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE, IEMSMod.MODID);
 
     // 方块注册
     public static final DeferredBlock<EnergyStorageBlock> STANDARD_ENERGY_STORAGE = registerBlock(
@@ -55,9 +55,34 @@ public class IEMSBlocks {
         () -> new EnergyMarkerBlock(Block.Properties.of().noCollission().noOcclusion().instabreak())
     );
 
+    // 方块实体注册
+    public static final Supplier<BlockEntityType<EnergyStorageBlockEntity>> ENERGY_STORAGE_ENTITY = BLOCK_ENTITIES.register(
+        "energy_storage_entity",
+        () -> BlockEntityType.Builder.of((pos, state) -> new EnergyStorageBlockEntity(pos, state), STANDARD_ENERGY_STORAGE.get(), GENERAL_ENERGY_STORAGE.get()).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<EnergyConverterBlockEntity>> ENERGY_CONVERTER_ENTITY = BLOCK_ENTITIES.register(
+        "energy_converter_entity",
+        () -> BlockEntityType.Builder.of((pos, state) -> new EnergyConverterBlockEntity(pos, state), ENERGY_CONVERTER.get()).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<EnergyRelayBlockEntity>> ENERGY_RELAY_ENTITY = BLOCK_ENTITIES.register(
+        "energy_relay_entity",
+        () -> BlockEntityType.Builder.of((pos, state) -> new EnergyRelayBlockEntity(pos, state), ENERGY_RELAY.get()).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<EnergyBroadcastTowerBlockEntity>> ENERGY_BROADCAST_TOWER_ENTITY = BLOCK_ENTITIES.register(
+        "energy_broadcast_tower_entity",
+        () -> BlockEntityType.Builder.of((pos, state) -> new EnergyBroadcastTowerBlockEntity(pos, state), ENERGY_BROADCAST_TOWER.get()).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<EnergyMarkerBlockEntity>> ENERGY_MARKER_ENTITY = BLOCK_ENTITIES.register(
+        "energy_marker_entity",
+        () -> BlockEntityType.Builder.of((pos, state) -> new EnergyMarkerBlockEntity(pos, state)).build(null)
+    );
+
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> blockSupplier, String chineseName) {
         DeferredBlock<T> block = BLOCKS.register(name, blockSupplier);
-        // 标记方块不注册到物品栏
         if (!name.equals("energy_marker")) {
             ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties()));
         }
@@ -67,6 +92,7 @@ public class IEMSBlocks {
     public static void register(IEventBus modEventBus) {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
+        BLOCK_ENTITIES.register(modEventBus);
         IEMSCreativeTabs.register(modEventBus);
     }
 }

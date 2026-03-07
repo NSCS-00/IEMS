@@ -4,14 +4,33 @@ plugins {
     id 'net.neoforged.gradle.userdev' version '7.0.145'
 }
 
-version = '0.6.5'
+// 读取迭代号
+def iterationFile = file('version.txt')
+def iteration = iterationFile.exists() ? iterationFile.text.trim() : '00000000'
+def baseVersion = '0.6.5'
+version = "${baseVersion}-BUILD.${iteration}"
 group = 'com.dlzstudio.iems'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+repositories {
+    // GeckoLib 官方 Maven 仓库
+    maven {
+        name = 'GeckoLib'
+        url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content {
+            includeGroupByRegex("software\\.bernie.*")
+            includeGroup("com.eliotlash.mclib")
+        }
+    }
+}
+
 dependencies {
     implementation "net.neoforged:neoforge:21.1.74"
-    implementation fg.deobf("org.softwaregeek.geckolib:geckolib-neoforge-1.21.1:4.7.2")
+    // NeoForge 1.20.5+ 不需要 fg.deobf()
+    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.8.4"
+    // GeckoLib 需要 mclib 库
+    implementation "com.eliotlash.mclib:mclib:20"
 }
 
 tasks.withType(JavaCompile).configureEach {

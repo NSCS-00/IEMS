@@ -3,7 +3,7 @@ loaderVersion="[4,)"
 license="MIT"
 
 [[mods]]
-modId="IEMS"
+modId="iems"
 version="0.6.5"
 displayName="Integrated Energy Management System"
 authors="等离子工作室 (DLZstudio)"
@@ -27,7 +27,8 @@ description='''
 
 [[dependencies.IEMS]]
     modId="geckolib"
-    type="required"
+    type="optional"
     versionRange="[4.7.2,)"
     ordering="AFTER"
     side="CLIENT"
+    reason="用于 3D 模型渲染（中继器/广播塔）"

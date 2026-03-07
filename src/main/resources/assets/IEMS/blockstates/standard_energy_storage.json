@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "iems:block/standard_energy_storage"
+    }
+  }
+}

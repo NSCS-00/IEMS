@@ -7,21 +7,22 @@ import com.dlzstudio.iems.energy.EnergyValue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.math.BigInteger;
 
 public class EnergyStorageBlockEntity extends BlockEntity {
-    
+
     private final EnergyStorageBlock.StorageType storageType;
     private EnergyValue energyStored;
     private EnergyValue capacity;
     private EnergyValue maxReceive;
     private EnergyValue maxExtract;
-    
+
     private boolean canReceive = true;
     private boolean canExtract = true;
-    
+
     public EnergyStorageBlockEntity(BlockPos pos, BlockState state, EnergyStorageBlock.StorageType type) {
         super(null, pos, state);
         this.storageType = type;
@@ -30,21 +31,28 @@ public class EnergyStorageBlockEntity extends BlockEntity {
         this.maxReceive = new EnergyValue(capacity.getValueInFE().divide(BigInteger.valueOf(100)), EnergyValue.EnergyUnit.FE);
         this.maxExtract = new EnergyValue(capacity.getValueInFE().divide(BigInteger.valueOf(100)), EnergyValue.EnergyUnit.FE);
     }
-    
+
+    public EnergyStorageBlockEntity(BlockPos pos, BlockState state) {
+        this(pos, state, EnergyStorageBlock.StorageType.STANDARD);
+    }
+
+    @Override
+    public BlockEntityType<?> getType() {
+        return IEMSBlocks.ENERGY_STORAGE_ENTITY.get();
+    }
+
     private void initCapacity() {
         if (storageType == EnergyStorageBlock.StorageType.STANDARD) {
-            // 100,000 SE
             this.capacity = new EnergyValue(BigInteger.valueOf(100_000), EnergyValue.EnergyUnit.SE);
         } else {
-            // 10^20 GE
             this.capacity = new EnergyValue(new BigInteger("100000000000000000000"), EnergyValue.EnergyUnit.GE);
         }
     }
-    
+
     public EnergyStorageBlock.StorageType getStorageType() {
         return storageType;
     }
-    
+
     @Override
     public void onLoad() {
         super.onLoad();
@@ -52,7 +60,7 @@ public class EnergyStorageBlockEntity extends BlockEntity {
             EnergyGrid.getInstance().registerStorage(worldPosition);
         }
     }
-    
+
     @Override
     public void setRemoved() {
         if (level != null && !level.isClientSide) {
@@ -60,45 +68,13 @@ public class EnergyStorageBlockEntity extends BlockEntity {
         }
         super.setRemoved();
     }
-    
+
     public void tick() {
-        if (level == null || level.isClientSide) return;
-        
-        // 每 20 tick 同步一次
-        if (level.getGameTime() % 20 == 0) {
+        if (level != null && level.getGameTime() % 20 == 0) {
             setChanged();
         }
-        
-        // 检查是否连接到核心
-        if (level.getGameTime() % 100 == 0) {
-            boolean connected = EnergyGrid.getInstance().isConnectedToCore(worldPosition);
-            if (connected && hasEnergyToOutput()) {
-                // 如果核心缺电，向核心供电
-                supplyEnergyToGrid();
-            } else if (connected && canReceiveEnergy()) {
-                // 如果核心富余，从核心充电
-                chargeEnergyFromGrid();
-            }
-        }
     }
-    
-    /**
-     * 向电网供电
-     */
-    private void supplyEnergyToGrid() {
-        // 简化实现：由核心统一管理
-    }
-    
-    /**
-     * 从电网充电
-     */
-    private void chargeEnergyFromGrid() {
-        // 简化实现：由核心统一管理
-    }
-    
-    /**
-     * 接收能量
-     */
+
     public EnergyValue receiveEnergy(EnergyValue energy, boolean simulate) {
         if (!canReceive) return EnergyValue.zero();
         
@@ -111,10 +87,7 @@ public class EnergyStorageBlockEntity extends BlockEntity {
         }
         return canAccept;
     }
-    
-    /**
-     * 提取能量
-     */
+
     public EnergyValue extractEnergy(EnergyValue energy, boolean simulate) {
         if (!canExtract || energyStored.isZero()) return EnergyValue.zero();
         
@@ -126,43 +99,31 @@ public class EnergyStorageBlockEntity extends BlockEntity {
         }
         return canExtract;
     }
-    
+
     public boolean hasEnergyToOutput() {
         return !energyStored.isZero() && canExtract;
     }
-    
+
     public boolean canReceiveEnergy() {
         return canReceive && !energyStored.isFull(capacity);
     }
-    
-    public boolean canProvideEnergy() {
-        return canExtract && !energyStored.isZero();
-    }
-    
+
     public EnergyValue getEnergyStored() {
         return energyStored;
     }
-    
+
     public EnergyValue getCapacity() {
         return capacity;
     }
-    
+
     public int getEnergyPercentage() {
         if (capacity.isZero()) return 0;
         return energyStored.getValueInFE().multiply(BigInteger.valueOf(100))
             .divide(capacity.getValueInFE()).intValue();
     }
-    
+
     public Component getDisplayName() {
         return Component.literal(storageType == EnergyStorageBlock.StorageType.STANDARD ? 
             "标准能量存储器" : "通用能量存储器");
-    }
-    
-    /**
-     * 设置能量值（用于调试/创造模式）
-     */
-    public void setEnergy(EnergyValue energy) {
-        this.energyStored = energy;
-        setChanged();
     }
 }

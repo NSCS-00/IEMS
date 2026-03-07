@@ -1,0 +1,6 @@
+{
+  "parent": "geckolib:geo/relay_tower.geo.json",
+  "textures": {
+    "particle": "iems:block/relay_tower"
+  }
+}

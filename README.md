@@ -11,11 +11,32 @@
 | **模组名称** | 综合能源管理系统 |
 | **英文名称** | Integrated Energy Management System |
 | **缩写** | IEMS |
-| **版本** | 0.6.0 |
+| **版本** | 0.6.5 |
 | **开发团队** | 等离子工作室 (DLZstudio) |
 | **适用版本** | Minecraft 1.21.1 NeoForge |
 | **Mod ID** | `IEMS` |
 | **Group ID** | `com.dlzstudio.iems` |
+| **前置模组** | GeckoLib 4.7.2+ (客户端必需) |
+
+---
+
+## 前置模组
+
+### GeckoLib (客户端必需)
+
+**GeckoLib** 是一个动画库，用于渲染 3D 模型（中继器/广播塔）。
+
+**下载方式:**
+1. **MC 百科**: https://www.mcmod.cn/mod/geckolib.html
+2. **CurseForge**: https://www.curseforge.com/minecraft/mc-mods/geckolib
+3. **Modrinth**: https://modrinth.com/mod/geckolib
+
+**安装方法:**
+1. 下载对应版本的 GeckoLib JAR 文件
+2. 放入 `.minecraft/mods/` 文件夹
+3. 启动游戏
+
+> **注意**: GeckoLib 是**可选依赖**，但如果没有安装，中继器和广播塔将不会显示 3D 模型。
 
 ---
 

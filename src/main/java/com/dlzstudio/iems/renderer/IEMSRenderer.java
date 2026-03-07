@@ -1,13 +1,10 @@
 package com.dlzstudio.iems.renderer;
 
 import com.dlzstudio.iems.IEMSMod;
-import com.dlzstudio.iems.blocks.entity.EnergyBroadcastTowerBlockEntity;
-import com.dlzstudio.iems.blocks.entity.EnergyMarkerBlockEntity;
-import com.dlzstudio.iems.blocks.entity.EnergyRelayBlockEntity;
+import com.dlzstudio.iems.blocks.IEMSBlocks;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
 /**
@@ -17,20 +14,19 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 public class IEMSRenderer {
 
     @SubscribeEvent
-    public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> {
-            IEMSMod.LOGGER.info("注册 IEMS 客户端渲染器");
-        });
-    }
-    
-    @SubscribeEvent
-    public static void registerBlockEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        // 注册标记方块渲染器
+    public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        // 注册广播塔渲染器
         event.registerBlockEntityRenderer(
-            com.dlzstudio.iems.blocks.IEMSBlocks.ENERGY_MARKER_ENTITY.get(),
-            EnergyMarkerBlockRenderer::new
+            IEMSBlocks.ENERGY_BROADCAST_TOWER_ENTITY.get(),
+            EnergyBroadcastTowerRenderer::new
         );
-        
-        IEMSMod.LOGGER.info("注册 IEMS 标记方块渲染器");
+
+        // 注册中继器渲染器
+        event.registerBlockEntityRenderer(
+            IEMSBlocks.ENERGY_RELAY_ENTITY.get(),
+            EnergyRelayRenderer::new
+        );
+
+        IEMSMod.LOGGER.info("注册 IEMS GeoLib 渲染器");
     }
 }

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "iems:block/energy_converter"
+    }
+  }
+}

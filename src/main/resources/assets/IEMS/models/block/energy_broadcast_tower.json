@@ -1,0 +1,6 @@
+{
+  "parent": "geckolib:geo/electric_pylon.geo.json",
+  "textures": {
+    "particle": "iems:block/electric_pylon"
+  }
+}

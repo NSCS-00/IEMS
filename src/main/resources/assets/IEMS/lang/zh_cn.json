@@ -1,8 +1,17 @@
 {
   "itemGroup.IEMS.main": "综合能源管理系统",
-  "block.IEMS.standard_energy_storage": "标准能量存储器",
-  "block.IEMS.general_energy_storage": "通用能量存储器",
-  "block.IEMS.energy_converter": "能量转换器",
-  "block.IEMS.energy_relay": "能源中继传输器",
-  "block.IEMS.energy_broadcast_tower": "能源广播塔"
+  
+  "block.iems.standard_energy_storage": "标准能量存储器",
+  "block.iems.general_energy_storage": "通用能量存储器",
+  "block.iems.energy_converter": "能量转换器",
+  "block.iems.energy_relay": "能源中继传输器",
+  "block.iems.energy_broadcast_tower": "能源广播塔",
+  "block.iems.energy_marker": "能源标记方块",
+  
+  "item.iems.standard_energy_storage": "标准能量存储器",
+  "item.iems.general_energy_storage": "通用能量存储器",
+  "item.iems.energy_converter": "能量转换器",
+  "item.iems.energy_relay": "能源中继传输器",
+  "item.iems.energy_broadcast_tower": "能源广播塔",
+  "item.iems.energy_marker": "能源标记方块"
 }
